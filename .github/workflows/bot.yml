@@ -1,4 +1,3 @@
-.github/workflows/bot.yml
 name: Telegram Bot Run
 
 on:
