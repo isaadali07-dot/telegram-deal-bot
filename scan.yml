@@ -1,0 +1,56 @@
+name: 🛒 Bargain Hunter - Otomatik Tarama
+
+on:
+  # Her 30 dakikada bir çalış
+  schedule:
+    - cron: "0,30 6-22 * * *"   # Sabah 6 - Gece 22 arası, her 30 dakika
+
+  # Manuel tetikle (test için)
+  workflow_dispatch:
+    inputs:
+      max_price:
+        description: "Maksimum alım fiyatı (£)"
+        required: false
+        default: "50"
+
+jobs:
+  scan:
+    name: Platformları Tara & Bildir
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Kodu İndir
+        uses: actions/checkout@v4
+
+      - name: 🐍 Python Kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: 📦 Bağımlılıkları Yükle
+        run: pip install -r requirements.txt
+
+      - name: 💾 Daha Önce Görülen İlanları Yükle (Cache)
+        uses: actions/cache@v4
+        with:
+          path: seen_ids.json
+          key: seen-ids-${{ github.run_id }}
+          restore-keys: |
+            seen-ids-
+
+      - name: 🔍 Taramayı Başlat
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          EBAY_APP_ID: ${{ secrets.EBAY_APP_ID }}
+        run: |
+          python main.py
+
+      - name: 💾 Görülen İlanları Kaydet
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: seen_ids.json
+          key: seen-ids-${{ github.run_id }}
